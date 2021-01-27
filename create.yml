@@ -1,0 +1,47 @@
+# Create a task in Jira
+---
+- name: Create task
+  hosts: localhost
+  connection: local
+
+  vars:
+    server: "{{ lookup('env', 'JIRA_SERVER') }}"
+    user: "{{ lookup('hashi_vault', 'secret=services/data/jira:data')['username'] }}"
+    password: "{{ lookup('hashi_vault', 'secret=services/data/jira:data')['password'] }}"
+
+
+  vars_prompt:
+  - name: project
+    prompt: Project
+    default: AG
+    private: no
+  - name: summary
+    prompt: Summary
+    private: no
+  - name: description
+    prompt: Description and details
+    private: no
+  - name: business_user
+    prompt: Business User
+    private: no
+
+  tasks: 
+
+    - name: Create an issue
+      jira:
+        uri: "{{ server }}"
+        username: "{{ user }}"
+        password: "{{ password }}"
+        project: "{{ project }}"
+        operation: create
+        summary: "{{ summary }}"
+        description: "{{ description }}"
+        issuetype: Task
+      args:
+        fields:
+          customfield_12315:
+            name: "{{ business_user }}"
+      register: issue
+
+    - name: Issue ID
+      debug: msg="{{ issue }}" 

@@ -1,0 +1,29 @@
+# Fetch task
+---
+- name: Fetch task
+  hosts: localhost
+  connection: local
+
+  vars:
+    server: "{{ lookup('env', 'JIRA_SERVER') }}"
+    user: "{{ lookup('hashi_vault', 'secret=services/data/jira:data')['username'] }}"
+    password: "{{ lookup('hashi_vault', 'secret=services/data/jira:data')['password'] }}"
+
+  vars_prompt:
+    - name: "issue"
+      prompt: "Issue key"
+      private: no
+
+  tasks: 
+
+    - name: Fetch an issue
+      jira:
+        uri: '{{ server }}'
+        username: '{{ user }}'
+        password: '{{ password }}'
+        operation: fetch
+        issue: "{{ issue }}"
+      register: issue
+
+    - name: Issue ID
+      debug: msg="{{ issue }}" 

@@ -1,0 +1,26 @@
+# Add comment to the issue
+---
+- name: Add comment to the issue
+  hosts: localhost
+  connection: local
+
+  vars:
+    server: '{{ lookup('env', 'JIRA_SERVER') }}
+
+  vars_prompt:
+    - name: "issue"
+      prompt: "Issue key"
+      private: no
+    - name: "comment"
+      prompt: "Your comment"
+      private: no
+
+  tasks: 
+    - name: Comment on issue
+      jira:
+        uri: "{{ server }}"
+        username: "{{ lookup('hashi_vault', 'secret=cubbyhole/jira:username') | lookup('hashi_vault', 'secret=services/data/jira:data')['username'] }}"
+        password: "{{ lookup('hashi_vault', 'secret=cubbyhole/jira:password') | lookup('hashi_vault', 'secret=services/data/jira:data')['password'] }}"
+        issue: "{{ issue }}"
+        operation: comment
+        comment: "{{ comment }}"
