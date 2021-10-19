@@ -3,11 +3,12 @@
 - name: Transition issue to Done
   hosts: localhost
   connection: local
+  ignore_errors: yes
 
   vars:
     server: "{{ lookup('env', 'JIRA_SERVER') }}"
-    username: "{{ lookup('hashi_vault', 'secret=cubbyhole/jira:username') | default(lookup('hashi_vault', 'secret=services/data/jira:data')['username'], true) }}"
-    password: "{{ lookup('hashi_vault', 'secret=cubbyhole/jira:password') | default(lookup('hashi_vault', 'secret=services/data/jira:data')['password'], true) }}"
+    username: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=cubbyhole/jira:username') | default(lookup('community.hashi_vault.hashi_vault', 'secret=services/data/jira:data')['username'], true) }}"
+    password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=cubbyhole/jira:password') | default(lookup('community.hashi_vault.hashi_vault', 'secret=services/data/jira:data')['password'], true) }}"
 
   vars_prompt:
     - name: issue
@@ -16,6 +17,9 @@
 
   tasks: 
 
+    - name: env
+      debug: msg="{{ username }}"
+
     - name: Progress
       jira:
         uri: "{{ server }}"
@@ -23,9 +27,17 @@
         password: "{{ password }}"
         issue: "{{ issue }}"
         operation: transition
-        status: Start Progress
+        status: "{{ item }}"
       tags:
         - progress
+        - none
+      loop:
+        - Start Progress
+        - In Analysis
+        - Request Estimate
+        - To approve
+        - Development 
+        - In Development 
 
     - name: Review
       jira:
@@ -34,20 +46,15 @@
         password: "{{ password }}"
         issue: "{{ issue }}"
         operation: transition
-        status: In Review
+        status: "{{ item }}"
       tags:
-        - done
-
-    - name: Ready for QA
-      jira:
-        uri: "{{ server }}"
-        username: "{{ username }}"
-        password: "{{ password }}"
-        issue: "{{ issue }}"
-        operation: transition
-        status: Ready for QA
-      tags:
-        - done
+        - review
+        - none
+      loop:
+        - Review
+        - Review -1
+        - In Review
+        - Ready for QA 
 
     - name: Done
       jira:
@@ -56,6 +63,26 @@
         password: "{{ password }}"
         issue: "{{ issue }}"
         operation: transition
-        status: Done
+        status: "{{ item }}"
       tags:
         - done
+        - none
+      loop:
+        - Review Done 
+        - Resolved 
+        - Done 
+
+    - name: Close
+      jira:
+        uri: "{{ server }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        issue: "{{ issue }}"
+        operation: transition
+        status: "{{ item }}"
+      tags:
+        - close
+        - none
+      loop:
+        - Reject
+        - Close 
